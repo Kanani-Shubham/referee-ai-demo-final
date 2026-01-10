@@ -1,0 +1,7 @@
+project_id = "qjbdmfvnudvycamgdnln"
+
+[functions.get-parameters]
+verify_jwt = false
+
+[functions.compare-options]
+verify_jwt = false
