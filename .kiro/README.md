@@ -1,1 +1,10 @@
-This directory documents the use of Kiro during development for the Kiro Week 6 Challenge – The Referee.
+# Kiro Usage
+
+This project was developed as part of **Kiro Week 6 – The Referee** challenge.
+
+Kiro was used to:
+- Accelerate rapid iteration and prototyping
+- Refine AI decision logic and prompt structure
+- Validate comparison flows and trade-off analysis
+
+Kiro helped reduce development friction and enabled faster experimentation while building the final solution.
