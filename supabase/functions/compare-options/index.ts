@@ -76,20 +76,86 @@ function extractJSON(text: string): any {
   }
 }
 
+async function callGemini(prompt: string) {
+  const apiKey = Deno.env.get('GEMINI_API_KEY');
+  if (!apiKey) throw new Error('GEMINI_API_KEY is not configured');
+  
+  const ai = new GoogleGenAI({ apiKey });
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-2.5-flash',
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: comparisonSchema,
+      maxOutputTokens: 4000,
+      systemInstruction: "You are The Referee, a neutral decision analyst. Return strictly valid JSON.",
+    },
+  });
+
+  return extractJSON(response.text ?? '');
+}
+
+async function callGroq(prompt: string) {
+  const apiKey = Deno.env.get('GROQ_API_KEY');
+  if (!apiKey) throw new Error('GROQ_API_KEY is not configured');
+
+  const jsonSchema = `
+    {
+      "options": [
+        {
+          "name": "string",
+          "overview": "string",
+          "pros": ["string array"],
+          "cons": ["string array"],
+          "best_for": "string",
+          "risks": ["string array"],
+          "cost_level": "Low|Medium|High",
+          "complexity": "Low|Medium|High",
+          "scores": {
+            "suitability": 0-100,
+            "risk": 0-100,
+            "cost": 0-100,
+            "scalability": 0-100
+          }
+        }
+      ],
+      "summary": "string",
+      "recommendation": "string"
+    }
+  `;
+
+  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'llama-3.3-70b-versatile',
+      messages: [
+        { role: 'system', content: `You are The Referee, a neutral decision analyst. Return strictly valid JSON following this schema: ${jsonSchema}` },
+        { role: 'user', content: prompt }
+      ],
+      response_format: { type: 'json_object' },
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Groq API error: ${response.status}`);
+  }
+
+  const result = await response.json();
+  return extractJSON(result.choices[0]?.message?.content ?? '');
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const apiKey = Deno.env.get('GEMINI_API_KEY');
-    if (!apiKey) {
-      throw new Error('GEMINI_API_KEY is not configured');
-    }
-
     const { category, problemStatement, dynamicParams, priorities } = await req.json();
-    
-    const ai = new GoogleGenAI({ apiKey });
 
     const paramSummary = dynamicParams
       .map((p: any) => `- ${p.label}: ${p.value} ${p.unit || ''}`)
@@ -104,19 +170,20 @@ serve(async (req) => {
 
       Identify and score 2-3 distinct, viable options. Provide a clear recommendation.
     `;
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: comparisonSchema,
-        maxOutputTokens: 4000,
-        systemInstruction: "You are The Referee, a neutral decision analyst. Return strictly valid JSON.",
-      },
-    });
-
-    const data = extractJSON(response.text ?? '');
+    
+    let data;
+    try {
+      console.log('Trying Gemini API...');
+      data = await callGemini(prompt);
+    } catch (geminiError: any) {
+      const errorStr = geminiError?.message || String(geminiError);
+      if (errorStr.includes('429') || errorStr.includes('RESOURCE_EXHAUSTED') || errorStr.includes('quota')) {
+        console.log('Gemini rate limited, falling back to Groq...');
+        data = await callGroq(prompt);
+      } else {
+        throw geminiError;
+      }
+    }
     
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

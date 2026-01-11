@@ -70,41 +70,110 @@ function extractJSON(text: string): any {
   }
 }
 
+async function callGemini(category: string, problemStatement: string) {
+  const apiKey = Deno.env.get('GEMINI_API_KEY');
+  if (!apiKey) throw new Error('GEMINI_API_KEY is not configured');
+  
+  const ai = new GoogleGenAI({ apiKey });
+  const prompt = `
+    Analyze this decision intent:
+    Category: ${category}
+    Problem: "${problemStatement}"
+    
+    Identify 4-6 key parameters. Use standard numeric ranges (e.g., 0-100 or specific units like USD where relevant).
+    Available types: 'slider', 'toggle', 'select'.
+  `;
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-2.5-flash',
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: parameterGenerationSchema,
+      systemInstruction: "You are The Referee. Provide strictly valid JSON following the schema. Be precise and objective.",
+    },
+  });
+
+  return extractJSON(response.text ?? '');
+}
+
+async function callGroq(category: string, problemStatement: string) {
+  const apiKey = Deno.env.get('GROQ_API_KEY');
+  if (!apiKey) throw new Error('GROQ_API_KEY is not configured');
+  
+  const prompt = `
+    Analyze this decision intent:
+    Category: ${category}
+    Problem: "${problemStatement}"
+    
+    Identify 4-6 key parameters. Use standard numeric ranges (e.g., 0-100 or specific units like USD where relevant).
+    Available types: 'slider', 'toggle', 'select'.
+    
+    Return JSON with this exact structure:
+    {
+      "parameters": [
+        {
+          "id": "string",
+          "name": "string",
+          "label": "string",
+          "type": "slider|toggle|select",
+          "min": number (for sliders),
+          "max": number (for sliders),
+          "unit": "string (optional)",
+          "options": ["string array for select type"],
+          "reason": "string explaining why this parameter matters",
+          "defaultValue": "string"
+        }
+      ],
+      "suggestedPriorities": ["array of priority strings"]
+    }
+  `;
+
+  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'llama-3.3-70b-versatile',
+      messages: [
+        { role: 'system', content: 'You are The Referee. Provide strictly valid JSON. Be precise and objective.' },
+        { role: 'user', content: prompt }
+      ],
+      response_format: { type: 'json_object' },
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Groq API error: ${response.status}`);
+  }
+
+  const result = await response.json();
+  return extractJSON(result.choices[0]?.message?.content ?? '');
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const apiKey = Deno.env.get('GEMINI_API_KEY');
-    if (!apiKey) {
-      throw new Error('GEMINI_API_KEY is not configured');
-    }
-
     const { category, problemStatement } = await req.json();
     
-    const ai = new GoogleGenAI({ apiKey });
-
-    const prompt = `
-      Analyze this decision intent:
-      Category: ${category}
-      Problem: "${problemStatement}"
-      
-      Identify 4-6 key parameters. Use standard numeric ranges (e.g., 0-100 or specific units like USD where relevant).
-      Available types: 'slider', 'toggle', 'select'.
-    `;
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: parameterGenerationSchema,
-        systemInstruction: "You are The Referee. Provide strictly valid JSON following the schema. Be precise and objective.",
-      },
-    });
-
-    const data = extractJSON(response.text ?? '');
+    let data;
+    try {
+      console.log('Trying Gemini API...');
+      data = await callGemini(category, problemStatement);
+    } catch (geminiError: any) {
+      const errorStr = geminiError?.message || String(geminiError);
+      if (errorStr.includes('429') || errorStr.includes('RESOURCE_EXHAUSTED') || errorStr.includes('quota')) {
+        console.log('Gemini rate limited, falling back to Groq...');
+        data = await callGroq(category, problemStatement);
+      } else {
+        throw geminiError;
+      }
+    }
     
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
