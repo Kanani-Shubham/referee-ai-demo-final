@@ -98,61 +98,83 @@ export const ComparisonDashboard: React.FC<ComparisonDashboardProps> = ({
         </div>
       </div>
 
+      {/* Main Content - Always render if we have data */}
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10">
+        {/* Left Column: Options + Summary */}
         <div className="lg:col-span-8 space-y-10">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {initialData.options.map((option, idx) => (
-              <OptionCard key={idx} option={option} />
-            ))}
-          </div>
+          {/* Option Cards - Always render if options exist */}
+          {initialData.options && initialData.options.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {initialData.options.map((option, idx) => (
+                <OptionCard key={idx} option={option} />
+              ))}
+            </div>
+          )}
           
+          {/* Expert Summary + Verdict - Always render */}
           <div className="glass-card p-10 rounded-[2.5rem] border-l-8 border-primary shadow-xl overflow-hidden relative">
             <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
               <span className="text-9xl">⚖️</span>
             </div>
-            <h3 className="text-2xl font-black text-foreground mb-6">Expert Summary</h3>
-            <p className="text-muted-foreground leading-relaxed text-lg font-medium mb-8">
-              {initialData.summary}
-            </p>
-            <div className="bg-primary text-primary-foreground p-6 rounded-3xl shadow-lg shadow-primary/20">
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">The Verdict</span>
-              <p className="text-xl font-bold mt-2 leading-snug">{initialData.recommendation}</p>
-            </div>
+            
+            {/* Analysis Summary - render if available */}
+            {initialData.summary && (
+              <>
+                <h3 className="text-2xl font-black text-foreground mb-6">Analysis Summary</h3>
+                <p className="text-muted-foreground leading-relaxed text-lg font-medium mb-8">
+                  {initialData.summary}
+                </p>
+              </>
+            )}
+            
+            {/* Recommendation/Verdict - Always render last */}
+            {initialData.recommendation && (
+              <div className="bg-primary text-primary-foreground p-6 rounded-3xl shadow-lg shadow-primary/20">
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">Recommendation</span>
+                <p className="text-xl font-bold mt-2 leading-snug">{initialData.recommendation}</p>
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="lg:col-span-4 space-y-8">
-          <div className="glass-card p-8 rounded-[2rem] shadow-xl">
-            <h3 className="font-black text-xl text-foreground mb-8 tracking-tight">Trade-off Matrix</h3>
-            <div className="space-y-8">
-              {['suitability', 'risk', 'cost', 'scalability'].map((metric) => (
-                <div key={metric}>
-                  <p className="text-[11px] font-black uppercase text-muted-foreground mb-4 tracking-widest">{metric}</p>
-                  <div className="space-y-5">
-                    {initialData.options.map((opt, i) => (
-                      <div key={i} className="space-y-2">
-                        <div className="flex justify-between items-center text-[11px] font-bold">
-                          <span className="text-muted-foreground truncate max-w-[150px]">{opt.name}</span>
-                          <span className="text-foreground font-mono">{opt.scores[metric as keyof typeof opt.scores]}%</span>
-                        </div>
-                        <div className="h-2 bg-muted rounded-full overflow-hidden">
-                          <div 
-                            className={`h-full rounded-full transition-all duration-1000 ${
-                              metric === 'risk' ? 'bg-orange-500' : 
-                              metric === 'cost' ? 'bg-red-500' : 
-                              'bg-primary'
-                            }`}
-                            style={{ width: `${opt.scores[metric as keyof typeof opt.scores]}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    ))}
+        {/* Right Column: Trade-off Matrix - Only render if options exist with scores */}
+        {initialData.options && initialData.options.length > 0 && (
+          <div className="lg:col-span-4 space-y-8">
+            <div className="glass-card p-8 rounded-[2rem] shadow-xl">
+              <h3 className="font-black text-xl text-foreground mb-8 tracking-tight">Trade-off Matrix</h3>
+              <div className="space-y-8">
+                {['suitability', 'risk', 'cost', 'scalability'].map((metric) => (
+                  <div key={metric}>
+                    <p className="text-[11px] font-black uppercase text-muted-foreground mb-4 tracking-widest">{metric}</p>
+                    <div className="space-y-5">
+                      {initialData.options.map((opt, i) => {
+                        const score = opt.scores?.[metric as keyof typeof opt.scores] ?? 50;
+                        return (
+                          <div key={i} className="space-y-2">
+                            <div className="flex justify-between items-center text-[11px] font-bold">
+                              <span className="text-muted-foreground truncate max-w-[150px]">{opt.name}</span>
+                              <span className="text-foreground font-mono">{score}%</span>
+                            </div>
+                            <div className="h-2 bg-muted rounded-full overflow-hidden">
+                              <div 
+                                className={`h-full rounded-full transition-all duration-1000 ${
+                                  metric === 'risk' ? 'bg-orange-500' : 
+                                  metric === 'cost' ? 'bg-red-500' : 
+                                  'bg-primary'
+                                }`}
+                                style={{ width: `${score}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

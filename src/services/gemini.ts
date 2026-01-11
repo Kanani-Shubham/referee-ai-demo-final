@@ -31,6 +31,25 @@ export async function getDynamicParameters(category: DecisionCategory, problemSt
   }
 }
 
+function normalizeOption(opt: any, index: number): import('../types').ComparisonOption {
+  return {
+    name: opt?.name || `Option ${index + 1}`,
+    overview: opt?.overview || "Path analyzed based on your requirements.",
+    pros: Array.isArray(opt?.pros) && opt.pros.length > 0 ? opt.pros : ["Analysis in progress"],
+    cons: Array.isArray(opt?.cons) && opt.cons.length > 0 ? opt.cons : ["Trade-offs being evaluated"],
+    best_for: opt?.best_for || "Users seeking this approach",
+    risks: Array.isArray(opt?.risks) ? opt.risks : [],
+    cost_level: ['Low', 'Medium', 'High'].includes(opt?.cost_level) ? opt.cost_level : 'Medium',
+    complexity: ['Low', 'Medium', 'High'].includes(opt?.complexity) ? opt.complexity : 'Medium',
+    scores: {
+      suitability: typeof opt?.scores?.suitability === 'number' ? opt.scores.suitability : 50,
+      risk: typeof opt?.scores?.risk === 'number' ? opt.scores.risk : 50,
+      cost: typeof opt?.scores?.cost === 'number' ? opt.scores.cost : 50,
+      scalability: typeof opt?.scores?.scalability === 'number' ? opt.scores.scalability : 50,
+    }
+  };
+}
+
 export async function compareOptions(prefs: UserPreferences): Promise<ComparisonResponse> {
   try {
     const { data, error } = await supabase.functions.invoke('compare-options', {
@@ -46,16 +65,25 @@ export async function compareOptions(prefs: UserPreferences): Promise<Comparison
       console.error("Comparison Analysis Error:", error);
       throw error;
     }
+
+    console.log("Raw comparison data received:", JSON.stringify(data, null, 2));
+    
+    // Normalize options array - ensure we always have renderable options
+    const rawOptions = Array.isArray(data?.options) ? data.options : [];
+    const normalizedOptions = rawOptions.length > 0 
+      ? rawOptions.map((opt: any, idx: number) => normalizeOption(opt, idx))
+      : [];
+
+    // If no options came back, something went wrong - throw to trigger retry
+    if (normalizedOptions.length === 0) {
+      console.error("No options in response, data was:", data);
+      throw new Error("No comparison options returned from analysis");
+    }
     
     return {
-      options: (data.options || []).map((opt: any) => ({
-        ...opt,
-        name: opt.name || "Option",
-        overview: opt.overview || "Path analyzed based on your requirements.",
-        scores: opt.scores || { suitability: 50, risk: 50, cost: 50, scalability: 50 }
-      })),
-      summary: data.summary || "The Referee has analyzed your options.",
-      recommendation: data.recommendation || "Consider the trade-offs above to make your choice.",
+      options: normalizedOptions,
+      summary: data?.summary || "The Referee has analyzed your options based on the provided constraints and priorities.",
+      recommendation: data?.recommendation || "Review the detailed comparison above to make your decision.",
     };
   } catch (error) {
     console.error("Comparison Analysis Error:", error);
