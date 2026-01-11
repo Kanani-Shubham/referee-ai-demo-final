@@ -1,73 +1,95 @@
-# Welcome to your Lovable project
+# The Referee – AI Decision Comparison Tool ⚖️🤖
 
-## Project info
+The Referee is an AI-powered decision comparison tool built for the **Kiro Week 6 Challenge – The Referee** under the **AI for Bharat** program.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+Instead of providing a single “best” answer, The Referee compares multiple valid options, clearly explaining trade-offs, risks, and suitability to help users make confident, informed decisions.
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## Live Demo 🚀
 
-**Use Lovable**
+🔗 **Demo Link:** https://referee-ai-demo.lovable.app/
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+## Problem Statement
 
-**Use your preferred IDE**
+Most AI tools:
+- Provide a single recommendation
+- Hide trade-offs and risks
+- Do not explain *why* one option is better than another
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+For decisions like selecting a tech stack, making career moves, hiring, or major purchases, this approach can lead to poor or biased outcomes. Users need transparent comparisons, not one-line answers.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+---
 
-Follow these steps:
+## Solution: The Referee
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+The Referee approaches decision-making differently.
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+Instead of answering *“What should I choose?”*, it helps users understand:
+- What options are available
+- The pros and cons of each option
+- The risks involved
+- Which option best fits their priorities
 
-# Step 3: Install the necessary dependencies.
-npm i
+This enables thoughtful, balanced decision-making.
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+---
 
-**Edit a file directly in GitHub**
+## Key Features ✨
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+- Multiple decision categories:
+  - Tech Stack
+  - Career Move
+  - Hiring
+  - Major Purchase
+  - Custom Decisions
+- Dynamic, context-aware input configuration
+- Hybrid sliders (drag, keyboard, manual input)
+- Structured comparison cards
+- Expert summary with a clear verdict
+- Trade-off matrix visualization
+- Robust fallback handling to avoid incomplete results
 
-**Use GitHub Codespaces**
+---
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## AI Architecture 🧠
 
-## What technologies are used for this project?
+The Referee uses a **multi-model AI strategy** for reliability:
+- **Gemini** as the primary reasoning model
+- **Groq** as a fallback during rate limits or availability issues
 
-This project is built with:
+This ensures consistent and uninterrupted analysis for users.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+---
 
-## How can I deploy this project?
+## Technology Stack 🛠️
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+- **Frontend:** React, TypeScript (TSX), HTML, CSS, JavaScript  
+- **AI Models:** Gemini, Groq  
+- **Backend:** Serverless architecture  
+- **Deployment:** Cloud-based hosting  
 
-## Can I connect a custom domain to my Lovable project?
+The application is modular, scalable, and production-ready.
 
-Yes, you can!
+---
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## Role of Kiro ⚡
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Kiro played a key role in accelerating development by enabling rapid iteration, structured experimentation, and fast validation of decision logic, allowing the team to focus on building a high-quality decision experience.
+
+---
+
+## Conclusion
+
+The Referee demonstrates how AI can move beyond single-answer systems and support transparent, trade-off-driven decision-making. By focusing on comparison rather than prediction, it empowers users to make better choices in complex scenarios.
+
+---
+
+## Team – FourSight 👥
+
+- Shubham Kanani  
+- Meet Chhugani  
+- Dhruv Ponda  
+- Dharmik Vaja  
