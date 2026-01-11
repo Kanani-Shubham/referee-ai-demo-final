@@ -5,6 +5,7 @@ import { ComparisonDashboard } from '@/components/referee/ComparisonDashboard';
 import { LoadingScreen } from '@/components/referee/LoadingScreen';
 import { AppStep, UserPreferences, ComparisonResponse } from '@/types';
 import { compareOptions } from '@/services/gemini';
+import { toast } from '@/hooks/use-toast';
 
 export default function Index() {
   const [step, setStep] = useState<AppStep>(AppStep.LANDING);
@@ -25,7 +26,11 @@ export default function Index() {
       window.scrollTo(0, 0);
     } catch (error) {
       console.error("Error fetching comparison:", error);
-      alert("The Referee couldn't reach a verdict. Please check your inputs.");
+      toast({
+        title: "Analysis Failed",
+        description: "The Referee couldn't reach a verdict. Please check your inputs and try again.",
+        variant: "destructive",
+      });
       setStep(AppStep.INTENT);
     }
   };
@@ -37,7 +42,11 @@ export default function Index() {
       const data = await compareOptions(newPrefs);
       setComparisonData(data);
     } catch (error) {
-      alert("Failed to update simulation.");
+      toast({
+        title: "Update Failed",
+        description: "Failed to update simulation. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsRefreshing(false);
     }
